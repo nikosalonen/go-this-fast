@@ -1,10 +1,11 @@
 import type React from "react";
 import { useState } from "react";
+import { DistanceTimeBox } from "./DistanceTimeBox";
 
 export interface TimeInput {
-	hours: number;
-	minutes: number;
-	seconds: number;
+	hours: number | "";
+	minutes: number | "";
+	seconds: number | "";
 }
 
 interface RunEstimatesProps {
@@ -14,15 +15,52 @@ interface RunEstimatesProps {
 		field: keyof TimeInput,
 		value: string,
 	) => void;
+	onPaceChange?: (distance: string, pacePerKm: number) => void;
+	onSpeedChange?: (distance: string, speedKmH: number) => void;
 }
 
-const RunEstimates: React.FC<RunEstimatesProps> = ({ times, onTimeChange }) => {
+const RunEstimates: React.FC<RunEstimatesProps> = ({
+	times,
+	onTimeChange,
+	onPaceChange,
+	onSpeedChange,
+}) => {
 	const handleTimeChange = (
 		distance: string,
 		field: keyof TimeInput,
 		value: string,
 	) => {
-		onTimeChange(distance, field, value);
+		// Remove any leading zeros and convert empty string to "0"
+		const cleanedValue = value.replace(/^0+/, "") || "0";
+		onTimeChange(distance, field, cleanedValue);
+
+		// Calculate total seconds using the new value
+		const time = { ...times[distance], [field]: Number(cleanedValue) };
+		const totalSeconds =
+			(Number(time.hours) || 0) * 3600 +
+			(Number(time.minutes) || 0) * 60 +
+			(Number(time.seconds) || 0);
+
+		// Extract distance value from the distance string
+		const distanceMatch = distance.match(/(\d+(?:\.\d+)?)/);
+		const distanceKm = distanceMatch
+			? Number.parseFloat(distanceMatch[1])
+			: Number.NaN;
+
+		if (!Number.isNaN(distanceKm) && totalSeconds > 0) {
+			// Calculate pace (seconds per km)
+			const pacePerKm = totalSeconds / distanceKm;
+			onPaceChange?.(distance, pacePerKm);
+
+			// Calculate speed (km/h)
+			const speedKmH = (distanceKm / totalSeconds) * 3600;
+			onSpeedChange?.(distance, speedKmH);
+		}
+	};
+
+	const shouldHideHours = (distance: string): boolean => {
+		const shortDistances = ["100m", "400m", "1km", "1mile", "5km"];
+		return shortDistances.includes(distance);
 	};
 
 	return (
@@ -31,67 +69,15 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({ times, onTimeChange }) => {
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{times && Object.entries(times).length > 0 ? (
 					Object.entries(times).map(([distance, time]) => (
-						<div key={distance} className="border p-4 rounded-lg">
-							<h3 className="font-semibold mb-2">{distance}</h3>
-							<div className="flex gap-2">
-								<div>
-									<label
-										htmlFor={`${distance}-hours`}
-										className="block text-sm"
-									>
-										Hours
-									</label>
-									<input
-										id={`${distance}-hours`}
-										type="number"
-										min="0"
-										value={time.hours}
-										onChange={(e) =>
-											handleTimeChange(distance, "hours", e.target.value)
-										}
-										className="w-20 border rounded p-1"
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor={`${distance}-minutes`}
-										className="block text-sm"
-									>
-										Minutes
-									</label>
-									<input
-										id={`${distance}-minutes`}
-										type="number"
-										min="0"
-										max="59"
-										value={time.minutes}
-										onChange={(e) =>
-											handleTimeChange(distance, "minutes", e.target.value)
-										}
-										className="w-20 border rounded p-1"
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor={`${distance}-seconds`}
-										className="block text-sm"
-									>
-										Seconds
-									</label>
-									<input
-										id={`${distance}-seconds`}
-										type="number"
-										min="0"
-										max="59"
-										value={time.seconds}
-										onChange={(e) =>
-											handleTimeChange(distance, "seconds", e.target.value)
-										}
-										className="w-20 border rounded p-1"
-									/>
-								</div>
-							</div>
-						</div>
+						<DistanceTimeBox
+							key={distance}
+							distance={distance}
+							time={time}
+							onTimeChange={(field, value) =>
+								handleTimeChange(distance, field, value)
+							}
+							disableHours={shouldHideHours(distance)}
+						/>
 					))
 				) : (
 					<p>No time estimates available</p>

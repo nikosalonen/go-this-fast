@@ -102,7 +102,7 @@ const ConvertView: React.FC = () => {
 			...prev,
 			[distance]: {
 				...prev[distance],
-				[field]: Number.parseInt(value) || 0,
+				[field]: value === "" ? "" : Number(value),
 			},
 		}));
 	};
@@ -187,6 +187,18 @@ const ConvertView: React.FC = () => {
 			<RunEstimates
 				times={calculateEstimates()}
 				onTimeChange={handleTimeChange}
+				onPaceChange={(distance, pacePerKm) => {
+					setValues((prev) => ({
+						...prev,
+						minPerKm: (pacePerKm / 60).toFixed(2),
+					}));
+				}}
+				onSpeedChange={(distance, speedKmH) => {
+					setValues((prev) => ({
+						...prev,
+						kmPerHour: speedKmH.toFixed(2),
+					}));
+				}}
 			/>
 		</>
 	);
