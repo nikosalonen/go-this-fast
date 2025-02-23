@@ -1,5 +1,4 @@
 import type React from "react";
-import { useState } from "react";
 import { DistanceTimeBox } from "./DistanceTimeBox";
 
 export interface TimeInput {
@@ -34,12 +33,12 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		const cleanedValue = value.replace(/^0+/, "") || "0";
 		onTimeChange(distance, field, cleanedValue);
 
-		// Calculate total seconds using the new value
-		const time = { ...times[distance], [field]: Number(cleanedValue) };
+		// Calculate total seconds using the updated time object
+		const updatedTime = { ...times[distance], [field]: Number(cleanedValue) };
 		const totalSeconds =
-			(Number(time.hours) || 0) * 3600 +
-			(Number(time.minutes) || 0) * 60 +
-			(Number(time.seconds) || 0);
+			(Number(updatedTime.hours) || 0) * 3600 +
+			(Number(updatedTime.minutes) || 0) * 60 +
+			(Number(updatedTime.seconds) || 0);
 
 		// Extract distance value from the distance string
 		const distanceMatch = distance.match(/(\d+(?:\.\d+)?)/);

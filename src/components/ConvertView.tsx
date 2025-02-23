@@ -5,8 +5,8 @@ import type { TimeInput } from "./RunEstimates";
 
 const ConvertView: React.FC = () => {
 	const [values, setValues] = useState({
-		minPerKm: { minutes: "0", seconds: "00" },
-		minPerMile: { minutes: "0", seconds: "00" },
+		minPerKm: { minutes: "", seconds: "" },
+		minPerMile: { minutes: "", seconds: "" },
 		kmPerHour: "",
 		milesPerHour: "",
 	});
@@ -42,11 +42,14 @@ const ConvertView: React.FC = () => {
 	};
 
 	// Calculate estimated times based on current pace
-	const calculateEstimates = () => {
-		if (!values.minPerKm.minutes || !values.minPerKm.seconds) return times;
+	const calculateEstimates = (paceMinutes?: number, paceSeconds?: number) => {
+		// Use provided pace values or current values from state
+		const minutes = paceMinutes ?? Number(values.minPerKm.minutes);
+		const seconds = paceSeconds ?? Number(values.minPerKm.seconds);
 
-		const paceInSeconds =
-			parseMinSec(`${values.minPerKm.minutes}:${values.minPerKm.seconds}`) * 60; // Convert minutes to seconds
+		// Convert to total seconds per kilometer
+		const paceInSeconds = minutes * 60 + seconds;
+
 		const newTimes = { ...times };
 
 		const distances = {
@@ -94,24 +97,31 @@ const ConvertView: React.FC = () => {
 		const numValue =
 			Number(newValues[field].minutes) + Number(newValues[field].seconds) / 60;
 
-		if (numValue > 0) {
-			switch (field) {
-				case "minPerKm":
-					newValues.kmPerHour = (60 / numValue).toFixed(1);
-					newValues.minPerMile = formatToPaceObj(numValue * 1.60934);
-					newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
-					break;
-				case "minPerMile":
-					newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
-					newValues.minPerKm = formatToPaceObj(numValue / 1.60934);
-					newValues.milesPerHour = (60 / numValue).toFixed(1);
-					break;
-			}
-
-			if (field === "minPerKm") {
-				setTimes(calculateEstimates());
-			}
+		switch (field) {
+			case "minPerKm":
+				newValues.kmPerHour = (60 / numValue).toFixed(1);
+				newValues.minPerMile = formatToPaceObj(numValue * 1.60934);
+				newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
+				setTimes(
+					calculateEstimates(
+						Number(newValues.minPerKm.minutes),
+						Number(newValues.minPerKm.seconds),
+					),
+				);
+				break;
+			case "minPerMile":
+				newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
+				newValues.minPerKm = formatToPaceObj(numValue / 1.60934);
+				newValues.milesPerHour = (60 / numValue).toFixed(1);
+				setTimes(
+					calculateEstimates(
+						Number(newValues.minPerKm.minutes),
+						Number(newValues.minPerKm.seconds),
+					),
+				);
+				break;
 		}
+
 		setValues(newValues);
 	};
 
@@ -135,23 +145,26 @@ const ConvertView: React.FC = () => {
 				try {
 					const numValue = parseMinSec(newValue);
 
-					if (numValue > 0) {
-						switch (field) {
-							case "minPerKm":
-								newValues.kmPerHour = (60 / numValue).toFixed(1);
-								newValues.minPerMile = formatToPaceObj(numValue * 1.60934);
-								newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
-								break;
-							case "minPerMile":
-								newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
-								newValues.minPerKm = formatToPaceObj(numValue / 1.60934);
-								newValues.milesPerHour = (60 / numValue).toFixed(1);
-								break;
-						}
+					switch (field) {
+						case "minPerKm":
+							newValues.kmPerHour = (60 / numValue).toFixed(1);
+							newValues.minPerMile = formatToPaceObj(numValue * 1.60934);
+							newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
+							break;
+						case "minPerMile":
+							newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
+							newValues.minPerKm = formatToPaceObj(numValue / 1.60934);
+							newValues.milesPerHour = (60 / numValue).toFixed(1);
+							break;
+					}
 
-						if (field === "minPerKm") {
-							setTimes(calculateEstimates());
-						}
+					if (field === "minPerKm") {
+						setTimes(
+							calculateEstimates(
+								Number(newValues.minPerKm.minutes),
+								Number(newValues.minPerKm.seconds),
+							),
+						);
 					}
 					setValues(newValues);
 				} catch (error) {
@@ -173,21 +186,39 @@ const ConvertView: React.FC = () => {
 				if (!Number.isNaN(numValue)) {
 					const newValues = { ...values, [field]: newValue };
 
-					if (numValue > 0) {
-						switch (field) {
-							case "kmPerHour":
-								newValues.minPerKm = formatToPaceObj(60 / numValue);
-								newValues.minPerMile = formatToPaceObj(96.56064 / numValue);
-								newValues.milesPerHour = (numValue / 1.60934).toFixed(1);
-								break;
-							case "milesPerHour":
-								newValues.minPerKm = formatToPaceObj(37.282272 / numValue);
-								newValues.minPerMile = formatToPaceObj(60 / numValue);
-								newValues.kmPerHour = (numValue * 1.60934).toFixed(1);
-								break;
+					switch (field) {
+						case "kmPerHour": {
+							const minPerKmObj = formatToPaceObj(60 / numValue);
+							newValues.minPerKm = minPerKmObj;
+							newValues.minPerMile = formatToPaceObj(96.56064 / numValue);
+							newValues.milesPerHour = (numValue / 1.60934).toFixed(1);
+							setValues(newValues);
+							setTimes(
+								calculateEstimates(
+									Number(minPerKmObj.minutes),
+									Number(minPerKmObj.seconds),
+								),
+							);
+							break;
 						}
+						case "milesPerHour": {
+							const kmPerHour = numValue * 1.60934;
+							const minPerKmObjFromMph = formatToPaceObj(60 / kmPerHour);
+							newValues.minPerKm = minPerKmObjFromMph;
+							newValues.minPerMile = formatToPaceObj(60 / numValue);
+							newValues.kmPerHour = kmPerHour.toFixed(1);
+							setValues(newValues);
+							setTimes(
+								calculateEstimates(
+									Number(minPerKmObjFromMph.minutes),
+									Number(minPerKmObjFromMph.seconds),
+								),
+							);
+							break;
+						}
+						default:
+							setValues(newValues);
 					}
-					setValues(newValues);
 				}
 			}
 		};
@@ -197,13 +228,70 @@ const ConvertView: React.FC = () => {
 		field: keyof TimeInput,
 		value: string,
 	) => {
-		setTimes((prev) => ({
-			...prev,
-			[distance]: {
-				...prev[distance],
-				[field]: value === "" ? "" : Number(value),
-			},
-		}));
+		setTimes((prev) => {
+			const newTimes = {
+				...prev,
+				[distance]: {
+					...prev[distance],
+					[field]: value === "" ? "" : Number(value),
+				},
+			};
+
+			// Calculate pace from the updated time
+			const time = newTimes[distance];
+			const totalSeconds =
+				(Number(time.hours) || 0) * 3600 +
+				(Number(time.minutes) || 0) * 60 +
+				(Number(time.seconds) || 0);
+
+			const distanceMatch = distance.match(/(\d+(?:\.\d+)?)/);
+			const distanceKm = distanceMatch
+				? Number.parseFloat(distanceMatch[1])
+				: null;
+
+			if (distanceKm && totalSeconds > 0) {
+				const paceMinPerKm = totalSeconds / (60 * distanceKm);
+				const minutes = Math.floor(paceMinPerKm);
+				const seconds = Math.round((paceMinPerKm - minutes) * 60);
+
+				setValues((prev) => ({
+					...prev,
+					minPerKm: {
+						minutes: minutes.toString(),
+						seconds: seconds.toString().padStart(2, "0"),
+					},
+					kmPerHour: ((distanceKm * 3600) / totalSeconds).toFixed(1),
+				}));
+			}
+
+			return newTimes;
+		});
+	};
+
+	const calculateEstimatesFromPace = (paceInSeconds: number) => {
+		const newTimes = { ...times };
+
+		const distances = {
+			"100m": 0.1,
+			"400m": 0.4,
+			"1km": 1,
+			"1mile": 1.60934,
+			"5km": 5,
+			"10km": 10,
+			"Half Marathon": 21.0975,
+			Marathon: 42.195,
+		};
+
+		for (const [distance, km] of Object.entries(distances)) {
+			const totalSeconds = paceInSeconds * km;
+			const hours = Math.floor(totalSeconds / 3600);
+			const minutes = Math.floor((totalSeconds % 3600) / 60);
+			const seconds = Math.floor(totalSeconds % 60);
+
+			newTimes[distance] = { hours, minutes, seconds };
+		}
+
+		return newTimes;
 	};
 
 	return (
@@ -333,13 +421,18 @@ const ConvertView: React.FC = () => {
 					</div>
 				</div>
 			</div>
-			{/* <RunEstimates
-				times={calculateEstimates()}
+			<RunEstimates
+				times={times}
 				onTimeChange={handleTimeChange}
 				onPaceChange={(distance, pacePerKm) => {
+					const minutes = Math.floor(pacePerKm / 60);
+					const seconds = Math.round(pacePerKm % 60);
 					setValues((prev) => ({
 						...prev,
-						minPerKm: (pacePerKm / 60).toFixed(2),
+						minPerKm: {
+							minutes: minutes.toString(),
+							seconds: seconds.toString().padStart(2, "0"),
+						},
 					}));
 				}}
 				onSpeedChange={(distance, speedKmH) => {
@@ -348,7 +441,7 @@ const ConvertView: React.FC = () => {
 						kmPerHour: speedKmH.toFixed(2),
 					}));
 				}}
-			/> */}
+			/>
 		</>
 	);
 };

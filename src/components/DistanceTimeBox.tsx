@@ -14,6 +14,11 @@ export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
 	onTimeChange,
 	disableHours = false,
 }) => {
+	// Add arrays for dropdown options
+	const hoursOptions = Array.from({ length: 25 }, (_, i) => i.toString());
+	const minutesOptions = Array.from({ length: 60 }, (_, i) => i.toString());
+	const secondsOptions = Array.from({ length: 60 }, (_, i) => i.toString());
+
 	return (
 		<div className="border p-4 rounded-lg">
 			<h3 className="font-semibold mb-2">{distance}</h3>
@@ -23,43 +28,56 @@ export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
 						<label htmlFor={`${distance}-hours`} className="block text-sm">
 							Hours
 						</label>
-						<input
+						<select
 							id={`${distance}-hours`}
-							type="number"
-							min="0"
-							value={time.hours === "" ? "" : time.hours}
+							value={time.hours}
 							onChange={(e) => onTimeChange("hours", e.target.value)}
 							className="w-20 border rounded p-1"
-						/>
+						>
+							<option value="">--</option>
+							{hoursOptions.map((hour) => (
+								<option key={hour} value={hour}>
+									{hour}
+								</option>
+							))}
+						</select>
 					</div>
 				)}
 				<div>
 					<label htmlFor={`${distance}-minutes`} className="block text-sm">
 						Minutes
 					</label>
-					<input
+					<select
 						id={`${distance}-minutes`}
-						type="number"
-						min="0"
-						max="59"
 						value={time.minutes}
 						onChange={(e) => onTimeChange("minutes", e.target.value)}
 						className="w-20 border rounded p-1"
-					/>
+					>
+						<option value="">--</option>
+						{minutesOptions.map((minute) => (
+							<option key={minute} value={minute}>
+								{minute}
+							</option>
+						))}
+					</select>
 				</div>
 				<div>
 					<label htmlFor={`${distance}-seconds`} className="block text-sm">
 						Seconds
 					</label>
-					<input
+					<select
 						id={`${distance}-seconds`}
-						type="number"
-						min="0"
-						max="59"
 						value={time.seconds}
 						onChange={(e) => onTimeChange("seconds", e.target.value)}
 						className="w-20 border rounded p-1"
-					/>
+					>
+						<option value="">--</option>
+						{secondsOptions.map((second) => (
+							<option key={second} value={second}>
+								{second}
+							</option>
+						))}
+					</select>
 				</div>
 			</div>
 		</div>
