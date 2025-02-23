@@ -81,14 +81,14 @@ const ConvertView: React.FC = () => {
 					if (numValue > 0) {
 						switch (field) {
 							case "minPerKm":
-								newValues.kmPerHour = (60 / numValue).toFixed(2);
+								newValues.kmPerHour = (60 / numValue).toFixed(1);
 								newValues.minPerMile = formatToMinSec(numValue * 1.60934);
-								newValues.milesPerHour = (37.282272 / numValue).toFixed(2);
+								newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
 								break;
 							case "minPerMile":
-								newValues.kmPerHour = (96.56064 / numValue).toFixed(2);
+								newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
 								newValues.minPerKm = formatToMinSec(numValue / 1.60934);
-								newValues.milesPerHour = (60 / numValue).toFixed(2);
+								newValues.milesPerHour = (60 / numValue).toFixed(1);
 								break;
 						}
 
@@ -111,12 +111,12 @@ const ConvertView: React.FC = () => {
 						case "kmPerHour":
 							newValues.minPerKm = formatToMinSec(60 / numValue);
 							newValues.minPerMile = formatToMinSec(96.56064 / numValue);
-							newValues.milesPerHour = (numValue / 1.60934).toFixed(2);
+							newValues.milesPerHour = (numValue / 1.60934).toFixed(1);
 							break;
 						case "milesPerHour":
 							newValues.minPerKm = formatToMinSec(37.282272 / numValue);
 							newValues.minPerMile = formatToMinSec(60 / numValue);
-							newValues.kmPerHour = (numValue * 1.60934).toFixed(2);
+							newValues.kmPerHour = (numValue * 1.60934).toFixed(1);
 							break;
 					}
 					setValues(newValues);
