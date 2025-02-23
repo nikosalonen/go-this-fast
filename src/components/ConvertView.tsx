@@ -22,11 +22,23 @@ const ConvertView: React.FC = () => {
 		Marathon: { hours: 0, minutes: 0, seconds: 0 },
 	});
 
+	// Add helper functions for time conversions
+	const formatToMinSec = (totalMinutes: number): string => {
+		const minutes = Math.floor(totalMinutes);
+		const seconds = Math.round((totalMinutes - minutes) * 60);
+		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+	};
+
+	const parseMinSec = (value: string): number => {
+		const [minutes, seconds = "0"] = value.split(":");
+		return Number(minutes) + Number(seconds) / 60;
+	};
+
 	// Calculate estimated times based on current pace
 	const calculateEstimates = () => {
 		if (!values.minPerKm) return times;
 
-		const paceInSeconds = Number.parseFloat(values.minPerKm) * 60; // Convert minutes to seconds
+		const paceInSeconds = parseMinSec(values.minPerKm) * 60; // Convert minutes to seconds
 		const newTimes = { ...times };
 
 		const distances = {
@@ -52,44 +64,65 @@ const ConvertView: React.FC = () => {
 		return newTimes;
 	};
 
-	// Update handleChange to also update estimates
+	// Update handleChange to handle MM:SS format
 	const handleChange =
 		(field: keyof typeof values) => (e: ChangeEvent<HTMLInputElement>) => {
 			const newValue = e.target.value;
-			const numValue = Number.parseFloat(newValue);
 
-			if (!Number.isNaN(numValue) && numValue > 0) {
+			if (field === "minPerKm" || field === "minPerMile") {
+				// Allow only digits and colon for time inputs
+				if (!/^[\d:]*$/.test(newValue)) return;
+
 				const newValues = { ...values, [field]: newValue };
 
-				switch (field) {
-					case "minPerKm":
-						newValues.kmPerHour = (60 / numValue).toFixed(2);
-						newValues.minPerMile = (numValue * 1.60934).toFixed(2);
-						newValues.milesPerHour = (37.282272 / numValue).toFixed(2);
-						break;
-					case "minPerMile":
-						newValues.kmPerHour = (96.56064 / numValue).toFixed(2);
-						newValues.minPerKm = (numValue / 1.60934).toFixed(2);
-						newValues.milesPerHour = (60 / numValue).toFixed(2);
-						break;
-					case "kmPerHour":
-						newValues.minPerKm = (60 / numValue).toFixed(2);
-						newValues.minPerMile = (96.56064 / numValue).toFixed(2);
-						newValues.milesPerHour = (numValue / 1.60934).toFixed(2);
-						break;
-					case "milesPerHour":
-						newValues.minPerKm = (37.282272 / numValue).toFixed(2);
-						newValues.minPerMile = (60 / numValue).toFixed(2);
-						newValues.kmPerHour = (numValue * 1.60934).toFixed(2);
-						break;
-				}
-				setValues(newValues);
-				// Update times when minPerKm changes
-				if (field === "minPerKm") {
-					setTimes(calculateEstimates());
+				try {
+					const numValue = parseMinSec(newValue);
+
+					if (numValue > 0) {
+						switch (field) {
+							case "minPerKm":
+								newValues.kmPerHour = (60 / numValue).toFixed(2);
+								newValues.minPerMile = formatToMinSec(numValue * 1.60934);
+								newValues.milesPerHour = (37.282272 / numValue).toFixed(2);
+								break;
+							case "minPerMile":
+								newValues.kmPerHour = (96.56064 / numValue).toFixed(2);
+								newValues.minPerKm = formatToMinSec(numValue / 1.60934);
+								newValues.milesPerHour = (60 / numValue).toFixed(2);
+								break;
+						}
+
+						if (field === "minPerKm") {
+							setTimes(calculateEstimates());
+						}
+					}
+					setValues(newValues);
+				} catch (error) {
+					setValues(newValues);
 				}
 			} else {
-				setValues({ ...values, [field]: newValue });
+				// Handle speed inputs (kmPerHour and milesPerHour) as before
+				const numValue = Number.parseFloat(newValue);
+
+				if (!Number.isNaN(numValue) && numValue > 0) {
+					const newValues = { ...values, [field]: newValue };
+
+					switch (field) {
+						case "kmPerHour":
+							newValues.minPerKm = formatToMinSec(60 / numValue);
+							newValues.minPerMile = formatToMinSec(96.56064 / numValue);
+							newValues.milesPerHour = (numValue / 1.60934).toFixed(2);
+							break;
+						case "milesPerHour":
+							newValues.minPerKm = formatToMinSec(37.282272 / numValue);
+							newValues.minPerMile = formatToMinSec(60 / numValue);
+							newValues.kmPerHour = (numValue * 1.60934).toFixed(2);
+							break;
+					}
+					setValues(newValues);
+				} else {
+					setValues({ ...values, [field]: newValue });
+				}
 			}
 		};
 
@@ -124,7 +157,7 @@ const ConvertView: React.FC = () => {
 						</label>
 						<input
 							id="minPerKm"
-							type="number"
+							type="text"
 							value={values.minPerKm}
 							onChange={handleChange("minPerKm")}
 							placeholder="0:00"
@@ -141,7 +174,7 @@ const ConvertView: React.FC = () => {
 						</label>
 						<input
 							id="minPerMile"
-							type="number"
+							type="text"
 							value={values.minPerMile}
 							onChange={handleChange("minPerMile")}
 							placeholder="0:00"
@@ -184,7 +217,7 @@ const ConvertView: React.FC = () => {
 					</div>
 				</div>
 			</div>
-			<RunEstimates
+			{/* <RunEstimates
 				times={calculateEstimates()}
 				onTimeChange={handleTimeChange}
 				onPaceChange={(distance, pacePerKm) => {
@@ -199,7 +232,7 @@ const ConvertView: React.FC = () => {
 						kmPerHour: speedKmH.toFixed(2),
 					}));
 				}}
-			/>
+			/> */}
 		</>
 	);
 };
