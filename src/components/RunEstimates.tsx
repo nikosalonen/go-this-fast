@@ -81,6 +81,15 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 			[distance]: false
 		}));
 	};
+	
+	// Reset function to restore all hidden boxes
+	const handleResetVisibility = () => {
+		const resetVisibility = Object.keys(distances).reduce(
+			(acc, distance) => ({ ...acc, [distance]: true }),
+			{}
+		);
+		setVisibleBoxes(resetVisibility);
+	};
 
 	const handleTimeChange = (
 		distance: string,
@@ -153,9 +162,23 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		return shortDistances.includes(distance);
 	};
 
+	// Check if any boxes are hidden to determine if we should show the reset button
+	const hasHiddenBoxes = Object.values(visibleBoxes).some(visible => visible === false);
+
 	return (
 		<div className="p-4">
-			<h2 className="text-2xl font-bold mb-4">Running Time Estimates</h2>
+			<div className="flex justify-between items-center mb-4">
+				<h2 className="text-2xl font-bold">Running Time Estimates</h2>
+				{hasHiddenBoxes && (
+					<button
+						onClick={handleResetVisibility}
+						className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+						aria-label="Reset hidden time boxes"
+					>
+						Reset Hidden Boxes
+					</button>
+				)}
+			</div>
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{times && Object.entries(times).length > 0 ? (
 					Object.entries(times)
