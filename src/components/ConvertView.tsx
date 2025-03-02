@@ -5,12 +5,13 @@ import type { TimeInput } from "./RunEstimates";
 
 const ConvertView: React.FC = () => {
 	const [values, setValues] = useState({
-		minPerKm: { minutes: "", seconds: "" },
-		minPerMile: { minutes: "", seconds: "" },
+		minPerKm: { minutes: "0", seconds: "00" },
+		minPerMile: { minutes: "0", seconds: "00" },
 		kmPerHour: "",
 		milesPerHour: "",
 	});
 
+	// Initialize times with all zeros
 	const [times, setTimes] = useState<Record<string, TimeInput>>({
 		"100m": { hours: 0, minutes: 0, seconds: 0 },
 		"400m": { hours: 0, minutes: 0, seconds: 0 },
@@ -320,7 +321,7 @@ const ConvertView: React.FC = () => {
 									}
 									className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								>
-									{generateOptions(2, 20).map((value) => (
+									{generateOptions(0, 20).map((value) => (
 										<option key={value} value={value}>
 											{value}
 										</option>
@@ -379,7 +380,7 @@ const ConvertView: React.FC = () => {
 									}
 									className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 								>
-									{generateOptions(3, 30).map((value) => (
+									{generateOptions(0, 30).map((value) => (
 										<option key={value} value={value}>
 											{value}
 										</option>
@@ -421,7 +422,7 @@ const ConvertView: React.FC = () => {
 					</div>
 				</div>
 			</div>
-			<RunEstimates
+			{/* <RunEstimates
 				times={times}
 				onTimeChange={handleTimeChange}
 				onPaceChange={(distance, pacePerKm) => {
@@ -441,7 +442,7 @@ const ConvertView: React.FC = () => {
 						kmPerHour: speedKmH.toFixed(2),
 					}));
 				}}
-			/>
+			/> */}
 		</>
 	);
 };
