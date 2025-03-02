@@ -54,7 +54,57 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 			// Calculate speed (km/h)
 			const speedKmH = (distanceKm / totalSeconds) * 3600;
 			onSpeedChange?.(distance, speedKmH);
+			
+			// Update all other distance boxes based on this pace
+			updateAllDistances(distance, pacePerKm);
 		}
+	};
+	
+	// Function to update all distances based on the pace from one distance
+	const updateAllDistances = (sourceDistance: string, pacePerKm: number) => {
+		// Define known distances in kilometers
+		const distances: Record<string, number> = {
+			"100m": 0.1,
+			"400m": 0.4,
+			"1km": 1,
+			"1mile": 1.60934,
+			"5km": 5,
+			"10km": 10,
+			"Half Marathon": 21.0975,
+			Marathon: 42.195,
+		};
+		
+		// Skip unknown distances
+		if (!distances[sourceDistance]) return;
+		
+		// Update each distance based on the calculated pace
+		Object.entries(distances).forEach(([distanceLabel, distanceKm]) => {
+			// Skip the source distance that triggered the update
+			if (distanceLabel === sourceDistance) return;
+			
+			// Calculate expected time for this distance based on the pace
+			const totalSeconds = pacePerKm * distanceKm;
+			
+			// Calculate hours, minutes, seconds
+			const hours = Math.floor(totalSeconds / 3600);
+			const minutes = Math.floor((totalSeconds % 3600) / 60);
+			const seconds = Math.floor(totalSeconds % 60);
+			
+			// Update the hours
+			if (times[distanceLabel].hours !== hours) {
+				onTimeChange(distanceLabel, "hours", hours.toString());
+			}
+			
+			// Update the minutes
+			if (times[distanceLabel].minutes !== minutes) {
+				onTimeChange(distanceLabel, "minutes", minutes.toString());
+			}
+			
+			// Update the seconds
+			if (times[distanceLabel].seconds !== seconds) {
+				onTimeChange(distanceLabel, "seconds", seconds.toString());
+			}
+		});
 	};
 
 	const shouldHideHours = (distance: string): boolean => {
