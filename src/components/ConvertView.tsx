@@ -255,6 +255,12 @@ const ConvertView: React.FC = () => {
 				const minutes = Math.floor(paceMinPerKm);
 				const seconds = Math.round((paceMinPerKm - minutes) * 60);
 
+				// Calculate mile-based metrics
+				const paceMinPerMile = paceMinPerKm * 1.60934;
+				const mileMinutes = Math.floor(paceMinPerMile);
+				const mileSeconds = Math.round((paceMinPerMile - mileMinutes) * 60);
+				const milesPerHour = ((distanceKm / 1.60934) * 3600) / totalSeconds;
+
 				setValues((prev) => ({
 					...prev,
 					minPerKm: {
@@ -262,6 +268,11 @@ const ConvertView: React.FC = () => {
 						seconds: seconds.toString().padStart(2, "0"),
 					},
 					kmPerHour: ((distanceKm * 3600) / totalSeconds).toFixed(1),
+					minPerMile: {
+						minutes: mileMinutes.toString(),
+						seconds: mileSeconds.toString().padStart(2, "0"),
+					},
+					milesPerHour: milesPerHour.toFixed(1),
 				}));
 			}
 
@@ -422,7 +433,7 @@ const ConvertView: React.FC = () => {
 					</div>
 				</div>
 			</div>
-			{/* <RunEstimates
+			<RunEstimates
 				times={times}
 				onTimeChange={handleTimeChange}
 				onPaceChange={(distance, pacePerKm) => {
@@ -442,7 +453,7 @@ const ConvertView: React.FC = () => {
 						kmPerHour: speedKmH.toFixed(2),
 					}));
 				}}
-			/> */}
+			/>
 		</>
 	);
 };
