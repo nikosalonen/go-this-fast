@@ -1,48 +1,81 @@
-# Astro Starter Kit: Basics
+# Go This Fast - Running Pace Calculator
 
-```sh
-npm create astro@latest -- --template basics
+Go This Fast is a web application built with Astro and React that helps runners calculate, convert, and estimate running times across various distances based on pace and speed inputs.
+
+## Features
+
+- **Pace and Speed Conversion**: Easily convert between different pace formats (min/km, min/mile) and speed metrics (km/h, mph)
+- **Running Time Estimates**: Calculate estimated finish times for standard race distances based on your current pace
+- **Interactive Interface**: Simple, intuitive UI with automatic real-time calculations
+- **Responsive Design**: Works well on desktop and mobile devices
+
+## Distances Supported
+
+The application supports standard running distances:
+- 100m
+- 400m
+- 1km 
+- 1 mile (1.60934 km)
+- 5km
+- 10km
+- Half Marathon (21.0975 km)
+- Marathon (42.195 km)
+
+## Technologies Used
+
+- [Astro](https://astro.build/) - Fast, modern static site builder
+- [React](https://react.dev/) - JavaScript library for building user interfaces
+- [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript for better development experience
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+
+## Getting Started
+
+### Prerequisites
+- Node.js (see .nvmrc for recommended version)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+   ```
+   git clone https://github.com/yourusername/go-this-fast.git
+   cd go-this-fast
+   ```
+
+2. Install dependencies
+   ```
+   npm install
+   ```
+
+3. Start the development server
+   ```
+   npm run dev
+   ```
+
+4. Open your browser and navigate to `http://localhost:4321`
+
+## Building for Production
+
+```
+npm run build
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+The built files will be in the `dist` directory.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## How It Works
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+The application calculates running times based on pace (minutes per kilometer). When you enter a time for any distance, the app automatically calculates:
 
-## 🚀 Project Structure
+1. Your pace in minutes per kilometer
+2. Your pace in minutes per mile
+3. Your speed in kilometers per hour
+4. Your speed in miles per hour
+5. Estimated finish times for all other supported distances
 
-Inside of your Astro project, you'll see the following folders and files:
+## Contributing
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## License
 
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+This project is open source and available under the [MIT License](LICENSE).
