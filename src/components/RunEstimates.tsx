@@ -24,6 +24,18 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	onPaceChange,
 	onSpeedChange,
 }) => {
+	// Define known distances in kilometers - moved to component level for reuse
+	const distances: Record<string, number> = {
+		"100m": 0.1,
+		"400m": 0.4,
+		"1km": 1,
+		"1mile": 1.60934,
+		"5km": 5,
+		"10km": 10,
+		"Half Marathon": 21.0975,
+		"Marathon": 42.195,
+	};
+
 	const handleTimeChange = (
 		distance: string,
 		field: keyof TimeInput,
@@ -34,19 +46,16 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		onTimeChange(distance, field, cleanedValue);
 
 		// Calculate total seconds using the updated time object
-		const updatedTime = { ...times[distance], [field]: Number(cleanedValue) };
+		const updatedTime = { ...times[distance], [field]: cleanedValue === "0" ? 0 : Number(cleanedValue) };
 		const totalSeconds =
-			(Number(updatedTime.hours) || 0) * 3600 +
-			(Number(updatedTime.minutes) || 0) * 60 +
-			(Number(updatedTime.seconds) || 0);
+			(updatedTime.hours === "" ? 0 : Number(updatedTime.hours)) * 3600 +
+			(updatedTime.minutes === "" ? 0 : Number(updatedTime.minutes)) * 60 +
+			(updatedTime.seconds === "" ? 0 : Number(updatedTime.seconds));
 
-		// Extract distance value from the distance string
-		const distanceMatch = distance.match(/(\d+(?:\.\d+)?)/);
-		const distanceKm = distanceMatch
-			? Number.parseFloat(distanceMatch[1])
-			: Number.NaN;
+		// Get distance value from our predefined mapping
+		const distanceKm = distances[distance];
 
-		if (!Number.isNaN(distanceKm) && totalSeconds > 0) {
+		if (distanceKm && totalSeconds > 0) {
 			// Calculate pace (seconds per km)
 			const pacePerKm = totalSeconds / distanceKm;
 			onPaceChange?.(distance, pacePerKm);
@@ -62,18 +71,6 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	
 	// Function to update all distances based on the pace from one distance
 	const updateAllDistances = (sourceDistance: string, pacePerKm: number) => {
-		// Define known distances in kilometers
-		const distances: Record<string, number> = {
-			"100m": 0.1,
-			"400m": 0.4,
-			"1km": 1,
-			"1mile": 1.60934,
-			"5km": 5,
-			"10km": 10,
-			"Half Marathon": 21.0975,
-			Marathon: 42.195,
-		};
-		
 		// Skip unknown distances
 		if (!distances[sourceDistance]) return;
 		
@@ -86,24 +83,22 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 			const totalSeconds = pacePerKm * distanceKm;
 			
 			// Calculate hours, minutes, seconds
-			const hours = Math.floor(totalSeconds / 3600);
-			const minutes = Math.floor((totalSeconds % 3600) / 60);
-			const seconds = Math.floor(totalSeconds % 60);
+			let hours = Math.floor(totalSeconds / 3600);
+			let minutes = Math.floor((totalSeconds % 3600) / 60);
+			let seconds = Math.floor(totalSeconds % 60);
 			
-			// Update the hours
-			if (times[distanceLabel].hours !== hours) {
-				onTimeChange(distanceLabel, "hours", hours.toString());
+			// If this is a distance that hides hours but we have hours value,
+			// convert hours to minutes for display
+			if (shouldHideHours(distanceLabel) && hours > 0) {
+				minutes += hours * 60;
+				hours = 0;
 			}
 			
-			// Update the minutes
-			if (times[distanceLabel].minutes !== minutes) {
-				onTimeChange(distanceLabel, "minutes", minutes.toString());
-			}
-			
-			// Update the seconds
-			if (times[distanceLabel].seconds !== seconds) {
-				onTimeChange(distanceLabel, "seconds", seconds.toString());
-			}
+			// Always update all time fields to ensure consistency
+			// First convert to string to match the expected type in onTimeChange
+			onTimeChange(distanceLabel, "hours", hours.toString());
+			onTimeChange(distanceLabel, "minutes", minutes.toString());
+			onTimeChange(distanceLabel, "seconds", seconds.toString());
 		});
 	};
 
