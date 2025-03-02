@@ -1,4 +1,5 @@
 import type React from "react";
+import { useState, useEffect } from "react";
 import { DistanceTimeBox } from "./DistanceTimeBox";
 
 export interface TimeInput {
@@ -18,6 +19,8 @@ interface RunEstimatesProps {
 	onSpeedChange?: (distance: string, speedKmH: number) => void;
 }
 
+const VISIBILITY_STORAGE_KEY = "runTimeBoxesVisibility";
+
 const RunEstimates: React.FC<RunEstimatesProps> = ({
 	times,
 	onTimeChange,
@@ -34,6 +37,49 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		"10km": 10,
 		"Half Marathon": 21.0975,
 		"Marathon": 42.195,
+	};
+
+	// State to track which time boxes are visible
+	const [visibleBoxes, setVisibleBoxes] = useState<Record<string, boolean>>({});
+
+	// Load visibility state from localStorage on initial render
+	useEffect(() => {
+		try {
+			const savedVisibility = localStorage.getItem(VISIBILITY_STORAGE_KEY);
+			if (savedVisibility) {
+				setVisibleBoxes(JSON.parse(savedVisibility));
+			} else {
+				// Initialize all boxes as visible by default
+				const initialVisibility = Object.keys(distances).reduce(
+					(acc, distance) => ({ ...acc, [distance]: true }),
+					{}
+				);
+				setVisibleBoxes(initialVisibility);
+				localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(initialVisibility));
+			}
+		} catch (error) {
+			console.error("Error loading time box visibility from localStorage:", error);
+			// Initialize all boxes as visible by default
+			const initialVisibility = Object.keys(distances).reduce(
+				(acc, distance) => ({ ...acc, [distance]: true }),
+				{}
+			);
+			setVisibleBoxes(initialVisibility);
+		}
+	}, []);
+
+	// Save visibility state to localStorage whenever it changes
+	useEffect(() => {
+		if (Object.keys(visibleBoxes).length > 0) {
+			localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(visibleBoxes));
+		}
+	}, [visibleBoxes]);
+
+	const handleCloseBox = (distance: string) => {
+		setVisibleBoxes(prev => ({
+			...prev,
+			[distance]: false
+		}));
 	};
 
 	const handleTimeChange = (
@@ -112,17 +158,20 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 			<h2 className="text-2xl font-bold mb-4">Running Time Estimates</h2>
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{times && Object.entries(times).length > 0 ? (
-					Object.entries(times).map(([distance, time]) => (
-						<DistanceTimeBox
-							key={distance}
-							distance={distance}
-							time={time}
-							onTimeChange={(field, value) =>
-								handleTimeChange(distance, field, value)
-							}
-							disableHours={shouldHideHours(distance)}
-						/>
-					))
+					Object.entries(times)
+						.filter(([distance]) => visibleBoxes[distance] !== false)
+						.map(([distance, time]) => (
+							<DistanceTimeBox
+								key={distance}
+								distance={distance}
+								time={time}
+								onTimeChange={(field, value) =>
+									handleTimeChange(distance, field, value)
+								}
+								disableHours={shouldHideHours(distance)}
+								onClose={() => handleCloseBox(distance)}
+							/>
+						))
 				) : (
 					<p>No time estimates available</p>
 				)}

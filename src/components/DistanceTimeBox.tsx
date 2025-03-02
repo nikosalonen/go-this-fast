@@ -6,6 +6,7 @@ interface DistanceTimeBoxProps {
 	time: TimeInput;
 	onTimeChange: (field: keyof TimeInput, value: string) => void;
 	disableHours?: boolean;
+	onClose?: () => void;
 }
 
 export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
@@ -13,6 +14,7 @@ export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
 	time,
 	onTimeChange,
 	disableHours = false,
+	onClose,
 }) => {
 	// Add arrays for dropdown options
 	const hoursOptions = Array.from({ length: 25 }, (_, i) => i.toString());
@@ -20,7 +22,16 @@ export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
 	const secondsOptions = Array.from({ length: 60 }, (_, i) => i.toString());
 
 	return (
-		<div className="border p-4 rounded-lg">
+		<div className="border p-4 rounded-lg relative">
+			{onClose && (
+				<button 
+					onClick={onClose}
+					className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+					aria-label={`Close ${distance}`}
+				>
+					✕
+				</button>
+			)}
 			<h3 className="font-semibold mb-2">{distance}</h3>
 			<div className="flex gap-2">
 				{!disableHours && (
