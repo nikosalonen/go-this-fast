@@ -16,13 +16,13 @@
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "astro": "^5.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.3"
   }
 }
