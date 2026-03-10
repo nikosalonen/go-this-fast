@@ -1,29 +1,31 @@
 import { createTheme } from "@mui/material/styles";
 
-const theme = createTheme({
-	palette: {
-		primary: {
-			main: "#4f46e5",
+const createAppTheme = (mode: "light" | "dark") =>
+	createTheme({
+		palette: {
+			mode,
+			primary: {
+				main: "#4f46e5",
+			},
+			secondary: {
+				main: "#3b82f6",
+			},
+			...(mode === "light"
+				? { background: { default: "#f9fafb" } }
+				: {}),
 		},
-		secondary: {
-			main: "#3b82f6",
+		typography: {
+			fontFamily: "'Inter', sans-serif",
 		},
-		background: {
-			default: "#f9fafb",
+		breakpoints: {
+			values: {
+				xs: 0,
+				sm: 640,
+				md: 768,
+				lg: 1024,
+				xl: 1280,
+			},
 		},
-	},
-	typography: {
-		fontFamily: "'Inter', sans-serif",
-	},
-	breakpoints: {
-		values: {
-			xs: 0,
-			sm: 640,
-			md: 768,
-			lg: 1024,
-			xl: 1280,
-		},
-	},
-});
+	});
 
-export default theme;
+export default createAppTheme;
