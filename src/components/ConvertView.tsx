@@ -4,9 +4,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
+import Slider from "@mui/material/Slider";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import RunEstimates from "./RunEstimates";
@@ -40,14 +38,6 @@ const ConvertView: React.FC = () => {
 		};
 	};
 
-	const parseMinSec = (value: string): number => {
-		const [minutes, seconds = "0"] = value.split(":");
-		if (seconds.length > 2 || Number(seconds) > 59) {
-			throw new Error("Invalid seconds");
-		}
-		return Number(minutes) + Number(seconds) / 60;
-	};
-
 	const calculateEstimates = (paceMinutes?: number, paceSeconds?: number) => {
 		const minutes = paceMinutes ?? Number(values.minPerKm.minutes);
 		const seconds = paceSeconds ?? Number(values.minPerKm.seconds);
@@ -79,11 +69,35 @@ const ConvertView: React.FC = () => {
 		return newTimes;
 	};
 
-	const generateOptions = (min: number, max: number, padZero = false) => {
-		return Array.from({ length: max - min + 1 }, (_, i) => {
-			const value = (i + min).toString();
-			return padZero ? value.padStart(2, "0") : value;
-		});
+	const formatSliderLabel = (value: number) => {
+		const m = Math.floor(value / 60);
+		const s = value % 60;
+		return `${m}:${s.toString().padStart(2, "0")}`;
+	};
+
+	const sliderMarks = Array.from({ length: 15 }, (_, i) => ({
+		value: (i + 1) * 60,
+		label: `${i + 1}`,
+	}));
+
+	const paceSliderValue =
+		Number(values.minPerKm.minutes) * 60 + Number(values.minPerKm.seconds);
+
+	const handleSliderChange = (_event: Event, value: number | number[]) => {
+		const totalSeconds = value as number;
+		const minutes = Math.floor(totalSeconds / 60).toString();
+		const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+
+		const numValue = Number(minutes) + Number(seconds) / 60;
+		const newValues = {
+			...values,
+			minPerKm: { minutes, seconds },
+			kmPerHour: (60 / numValue).toFixed(1),
+			minPerMile: formatToPaceObj(numValue * 1.60934),
+			milesPerHour: (37.282272 / numValue).toFixed(1),
+		};
+		setValues(newValues);
+		setTimes(calculateEstimates(Number(minutes), Number(seconds)));
 	};
 
 	const handlePaceChange = (
@@ -128,92 +142,50 @@ const ConvertView: React.FC = () => {
 	};
 
 	const handleChange =
-		(field: keyof typeof values) => (e: ChangeEvent<HTMLInputElement>) => {
+		(field: "kmPerHour" | "milesPerHour") =>
+		(e: ChangeEvent<HTMLInputElement>) => {
 			let newValue = e.target.value;
+			newValue = newValue.replace(",", ".");
 
-			if (field === "minPerKm" || field === "minPerMile") {
-				if (!/^[\d]*:?[\d]*$/.test(newValue)) return;
+			if (newValue === "" || newValue === "." || newValue === ",") {
+				setValues({ ...values, [field]: newValue });
+				return;
+			}
 
+			const numValue = Number.parseFloat(newValue);
+
+			if (!Number.isNaN(numValue)) {
 				const newValues = { ...values, [field]: newValue };
 
-				if (!newValue.includes(":") || newValue.endsWith(":")) {
-					setValues(newValues);
-					return;
-				}
-
-				try {
-					const numValue = parseMinSec(newValue);
-
-					switch (field) {
-						case "minPerKm":
-							newValues.kmPerHour = (60 / numValue).toFixed(1);
-							newValues.minPerMile = formatToPaceObj(numValue * 1.60934);
-							newValues.milesPerHour = (37.282272 / numValue).toFixed(1);
-							break;
-						case "minPerMile":
-							newValues.kmPerHour = (96.56064 / numValue).toFixed(1);
-							newValues.minPerKm = formatToPaceObj(numValue / 1.60934);
-							newValues.milesPerHour = (60 / numValue).toFixed(1);
-							break;
-					}
-
-					if (field === "minPerKm") {
+				switch (field) {
+					case "kmPerHour": {
+						const minPerKmObj = formatToPaceObj(60 / numValue);
+						newValues.minPerKm = minPerKmObj;
+						newValues.minPerMile = formatToPaceObj(96.56064 / numValue);
+						newValues.milesPerHour = (numValue / 1.60934).toFixed(1);
+						setValues(newValues);
 						setTimes(
 							calculateEstimates(
-								Number(newValues.minPerKm.minutes),
-								Number(newValues.minPerKm.seconds),
+								Number(minPerKmObj.minutes),
+								Number(minPerKmObj.seconds),
 							),
 						);
+						break;
 					}
-					setValues(newValues);
-				} catch (error) {
-					setValues(newValues);
-				}
-			} else {
-				newValue = newValue.replace(",", ".");
-
-				if (newValue === "" || newValue === "." || newValue === ",") {
-					setValues({ ...values, [field]: newValue });
-					return;
-				}
-
-				const numValue = Number.parseFloat(newValue);
-
-				if (!Number.isNaN(numValue)) {
-					const newValues = { ...values, [field]: newValue };
-
-					switch (field) {
-						case "kmPerHour": {
-							const minPerKmObj = formatToPaceObj(60 / numValue);
-							newValues.minPerKm = minPerKmObj;
-							newValues.minPerMile = formatToPaceObj(96.56064 / numValue);
-							newValues.milesPerHour = (numValue / 1.60934).toFixed(1);
-							setValues(newValues);
-							setTimes(
-								calculateEstimates(
-									Number(minPerKmObj.minutes),
-									Number(minPerKmObj.seconds),
-								),
-							);
-							break;
-						}
-						case "milesPerHour": {
-							const kmPerHour = numValue * 1.60934;
-							const minPerKmObjFromMph = formatToPaceObj(60 / kmPerHour);
-							newValues.minPerKm = minPerKmObjFromMph;
-							newValues.minPerMile = formatToPaceObj(60 / numValue);
-							newValues.kmPerHour = kmPerHour.toFixed(1);
-							setValues(newValues);
-							setTimes(
-								calculateEstimates(
-									Number(minPerKmObjFromMph.minutes),
-									Number(minPerKmObjFromMph.seconds),
-								),
-							);
-							break;
-						}
-						default:
-							setValues(newValues);
+					case "milesPerHour": {
+						const kmPerHour = numValue * 1.60934;
+						const minPerKmObjFromMph = formatToPaceObj(60 / kmPerHour);
+						newValues.minPerKm = minPerKmObjFromMph;
+						newValues.minPerMile = formatToPaceObj(60 / numValue);
+						newValues.kmPerHour = kmPerHour.toFixed(1);
+						setValues(newValues);
+						setTimes(
+							calculateEstimates(
+								Number(minPerKmObjFromMph.minutes),
+								Number(minPerKmObjFromMph.seconds),
+							),
+						);
+						break;
 					}
 				}
 			}
@@ -224,54 +196,13 @@ const ConvertView: React.FC = () => {
 		field: keyof TimeInput,
 		value: string,
 	) => {
-		setTimes((prev) => {
-			const newTimes = {
-				...prev,
-				[distance]: {
-					...prev[distance],
-					[field]: value === "" ? "" : Number(value),
-				},
-			};
-
-			const time = newTimes[distance];
-			const totalSeconds =
-				(Number(time.hours) || 0) * 3600 +
-				(Number(time.minutes) || 0) * 60 +
-				(Number(time.seconds) || 0);
-
-			const distanceMatch = distance.match(/(\d+(?:\.\d+)?)/);
-			const distanceKm = distanceMatch
-				? Number.parseFloat(distanceMatch[1])
-				: null;
-
-			if (distanceKm && totalSeconds > 0) {
-				const paceMinPerKm = totalSeconds / (60 * distanceKm);
-				const minutes = Math.floor(paceMinPerKm);
-				const seconds = Math.round((paceMinPerKm - minutes) * 60);
-
-				const kmPerHour = (distanceKm * 3600) / totalSeconds;
-				const milesPerHour = kmPerHour / 1.60934;
-				const paceMinPerMile = paceMinPerKm * 1.60934;
-				const mileMinutes = Math.floor(paceMinPerMile);
-				const mileSeconds = Math.round((paceMinPerMile - mileMinutes) * 60);
-
-				setValues((prev) => ({
-					...prev,
-					minPerKm: {
-						minutes: minutes.toString(),
-						seconds: seconds.toString().padStart(2, "0"),
-					},
-					minPerMile: {
-						minutes: mileMinutes.toString(),
-						seconds: mileSeconds.toString().padStart(2, "0"),
-					},
-					kmPerHour: kmPerHour.toFixed(1),
-					milesPerHour: milesPerHour.toFixed(1),
-				}));
-			}
-
-			return newTimes;
-		});
+		setTimes((prev) => ({
+			...prev,
+			[distance]: {
+				...prev[distance],
+				[field]: value === "" ? "" : Number(value),
+			},
+		}));
 	};
 
 	return (
@@ -292,43 +223,55 @@ const ConvertView: React.FC = () => {
 								<Typography variant="body2" color="text.secondary" mb={0.5}>
 									Pace (min/km)
 								</Typography>
+								<Box sx={{ px: 1, mb: 1 }}>
+									<Typography
+										variant="h6"
+										fontWeight="bold"
+										textAlign="center"
+										color="text.primary"
+										mb={1}
+									>
+										{formatSliderLabel(paceSliderValue)}
+									</Typography>
+									<Slider
+										value={paceSliderValue}
+										onChange={handleSliderChange}
+										min={60}
+										max={900}
+										step={1}
+										marks={sliderMarks}
+										valueLabelDisplay="auto"
+										valueLabelFormat={formatSliderLabel}
+									/>
+								</Box>
 								<Stack direction="row" spacing={1} alignItems="center">
-									<FormControl size="small" sx={{ minWidth: 80 }}>
-										<Select
-											value={values.minPerKm.minutes}
-											onChange={(e) =>
-												handlePaceChange("minPerKm", "minutes", e.target.value)
-											}
-										>
-											{generateOptions(0, 20).map((value) => (
-												<MenuItem key={value} value={value}>
-													{value}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
-									<Typography>:</Typography>
-									<FormControl size="small" sx={{ minWidth: 80 }}>
-										<Select
-											value={values.minPerKm.seconds}
-											onChange={(e) =>
-												handlePaceChange("minPerKm", "seconds", e.target.value)
-											}
-										>
-											{generateOptions(0, 59, true).map((value) => (
-												<MenuItem key={value} value={value}>
-													{value}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
+									<TextField
+										label="Min"
+										type="number"
+										sx={{ width: 100 }}
+										value={values.minPerKm.minutes}
+										onChange={(e) =>
+											handlePaceChange("minPerKm", "minutes", e.target.value)
+										}
+										inputProps={{ min: 0, max: 20, style: { textAlign: "center" } }}
+									/>
+									<Typography variant="h6">:</Typography>
+									<TextField
+										label="Sec"
+										type="number"
+										sx={{ width: 100 }}
+										value={values.minPerKm.seconds}
+										onChange={(e) =>
+											handlePaceChange("minPerKm", "seconds", e.target.value)
+										}
+										inputProps={{ min: 0, max: 59, style: { textAlign: "center" } }}
+									/>
 								</Stack>
 							</Box>
 
 							<TextField
 								label="Kilometers per Hour"
 								type="number"
-								size="small"
 								value={values.kmPerHour}
 								onChange={handleChange("kmPerHour")}
 								placeholder="0.0"
@@ -346,42 +289,33 @@ const ConvertView: React.FC = () => {
 									Pace (min/mile)
 								</Typography>
 								<Stack direction="row" spacing={1} alignItems="center">
-									<FormControl size="small" sx={{ minWidth: 80 }}>
-										<Select
-											value={values.minPerMile.minutes}
-											onChange={(e) =>
-												handlePaceChange("minPerMile", "minutes", e.target.value)
-											}
-										>
-											{generateOptions(0, 30).map((value) => (
-												<MenuItem key={value} value={value}>
-													{value}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
-									<Typography>:</Typography>
-									<FormControl size="small" sx={{ minWidth: 80 }}>
-										<Select
-											value={values.minPerMile.seconds}
-											onChange={(e) =>
-												handlePaceChange("minPerMile", "seconds", e.target.value)
-											}
-										>
-											{generateOptions(0, 59, true).map((value) => (
-												<MenuItem key={value} value={value}>
-													{value}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
+									<TextField
+										label="Min"
+										type="number"
+										sx={{ width: 100 }}
+										value={values.minPerMile.minutes}
+										onChange={(e) =>
+											handlePaceChange("minPerMile", "minutes", e.target.value)
+										}
+										inputProps={{ min: 0, max: 30, style: { textAlign: "center" } }}
+									/>
+									<Typography variant="h6">:</Typography>
+									<TextField
+										label="Sec"
+										type="number"
+										sx={{ width: 100 }}
+										value={values.minPerMile.seconds}
+										onChange={(e) =>
+											handlePaceChange("minPerMile", "seconds", e.target.value)
+										}
+										inputProps={{ min: 0, max: 59, style: { textAlign: "center" } }}
+									/>
 								</Stack>
 							</Box>
 
 							<TextField
 								label="Miles per Hour"
 								type="number"
-								size="small"
 								value={values.milesPerHour}
 								onChange={handleChange("milesPerHour")}
 								placeholder="0.0"
@@ -395,21 +329,14 @@ const ConvertView: React.FC = () => {
 				times={times}
 				onTimeChange={handleTimeChange}
 				onPaceChange={(_distance, pacePerKm) => {
-					const minutes = Math.floor(pacePerKm / 60);
-					const seconds = Math.round(pacePerKm % 60);
-					setValues((prev) => ({
-						...prev,
-						minPerKm: {
-							minutes: minutes.toString(),
-							seconds: seconds.toString().padStart(2, "0"),
-						},
-					}));
-				}}
-				onSpeedChange={(_distance, speedKmH) => {
-					setValues((prev) => ({
-						...prev,
-						kmPerHour: speedKmH.toFixed(2),
-					}));
+					const paceMinPerKm = pacePerKm / 60;
+					const kmPerHour = 3600 / pacePerKm;
+					setValues({
+						minPerKm: formatToPaceObj(paceMinPerKm),
+						minPerMile: formatToPaceObj(paceMinPerKm * 1.60934),
+						kmPerHour: kmPerHour.toFixed(1),
+						milesPerHour: (kmPerHour / 1.60934).toFixed(1),
+					});
 				}}
 			/>
 		</>
