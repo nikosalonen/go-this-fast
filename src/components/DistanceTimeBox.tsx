@@ -1,4 +1,13 @@
-import type React from "react";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import CloseIcon from "@mui/icons-material/Close";
 import type { TimeInput } from "./RunEstimates";
 
 interface DistanceTimeBoxProps {
@@ -16,81 +25,79 @@ export const DistanceTimeBox: React.FC<DistanceTimeBoxProps> = ({
 	disableHours = false,
 	onClose,
 }) => {
-	// Add arrays for dropdown options
 	const hoursOptions = Array.from({ length: 25 }, (_, i) => i.toString());
 	const minutesOptions = Array.from({ length: 60 }, (_, i) => i.toString());
 	const secondsOptions = Array.from({ length: 60 }, (_, i) => i.toString());
 
 	return (
-		<div className="border p-4 rounded-lg relative">
-			{onClose && (
-				<button 
-					onClick={onClose}
-					className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-					aria-label={`Close ${distance}`}
-				>
-					✕
-				</button>
-			)}
-			<h3 className="font-semibold mb-2">{distance}</h3>
-			<div className="flex gap-2">
-				{!disableHours && (
-					<div>
-						<label htmlFor={`${distance}-hours`} className="block text-sm">
-							Hours
-						</label>
-						<select
-							id={`${distance}-hours`}
-							value={time.hours}
-							onChange={(e) => onTimeChange("hours", e.target.value)}
-							className="w-20 border rounded p-1"
-						>
-							<option value="">--</option>
-							{hoursOptions.map((hour) => (
-								<option key={hour} value={hour}>
-									{hour}
-								</option>
-							))}
-						</select>
-					</div>
+		<Card variant="outlined" sx={{ position: "relative" }}>
+			<CardContent>
+				{onClose && (
+					<IconButton
+						onClick={onClose}
+						size="small"
+						aria-label={`Close ${distance}`}
+						sx={{ position: "absolute", top: 8, right: 8 }}
+					>
+						<CloseIcon fontSize="small" />
+					</IconButton>
 				)}
-				<div>
-					<label htmlFor={`${distance}-minutes`} className="block text-sm">
-						Minutes
-					</label>
-					<select
-						id={`${distance}-minutes`}
-						value={time.minutes}
-						onChange={(e) => onTimeChange("minutes", e.target.value)}
-						className="w-20 border rounded p-1"
-					>
-						<option value="">--</option>
-						{minutesOptions.map((minute) => (
-							<option key={minute} value={minute}>
-								{minute}
-							</option>
-						))}
-					</select>
-				</div>
-				<div>
-					<label htmlFor={`${distance}-seconds`} className="block text-sm">
-						Seconds
-					</label>
-					<select
-						id={`${distance}-seconds`}
-						value={time.seconds}
-						onChange={(e) => onTimeChange("seconds", e.target.value)}
-						className="w-20 border rounded p-1"
-					>
-						<option value="">--</option>
-						{secondsOptions.map((second) => (
-							<option key={second} value={second}>
-								{second}
-							</option>
-						))}
-					</select>
-				</div>
-			</div>
-		</div>
+				<Typography variant="subtitle1" fontWeight={600} mb={2}>
+					{distance}
+				</Typography>
+				<Stack direction="row" spacing={1.5}>
+					{!disableHours && (
+						<FormControl size="small" sx={{ minWidth: 80 }}>
+							<InputLabel id={`${distance}-hours-label`}>Hours</InputLabel>
+							<Select
+								labelId={`${distance}-hours-label`}
+								id={`${distance}-hours`}
+								value={time.hours.toString()}
+								onChange={(e) => onTimeChange("hours", e.target.value)}
+								label="Hours"
+							>
+								{hoursOptions.map((hour) => (
+									<MenuItem key={hour} value={hour}>
+										{hour}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					)}
+					<FormControl size="small" sx={{ minWidth: 80 }}>
+						<InputLabel id={`${distance}-minutes-label`}>Min</InputLabel>
+						<Select
+							labelId={`${distance}-minutes-label`}
+							id={`${distance}-minutes`}
+							value={time.minutes.toString()}
+							onChange={(e) => onTimeChange("minutes", e.target.value)}
+							label="Min"
+						>
+							{minutesOptions.map((minute) => (
+								<MenuItem key={minute} value={minute}>
+									{minute}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<FormControl size="small" sx={{ minWidth: 80 }}>
+						<InputLabel id={`${distance}-seconds-label`}>Sec</InputLabel>
+						<Select
+							labelId={`${distance}-seconds-label`}
+							id={`${distance}-seconds`}
+							value={time.seconds.toString()}
+							onChange={(e) => onTimeChange("seconds", e.target.value)}
+							label="Sec"
+						>
+							{secondsOptions.map((second) => (
+								<MenuItem key={second} value={second}>
+									{second}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+				</Stack>
+			</CardContent>
+		</Card>
 	);
 };
