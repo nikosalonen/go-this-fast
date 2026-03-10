@@ -14,6 +14,13 @@ import "../styles/global.css";
       name="description"
       content="Convert your data between different formats easily and securely"
     />
+    <script is:inline>
+      (function() {
+        var stored = localStorage.getItem('theme-mode');
+        var mode = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', mode);
+      })();
+    </script>
   </head>
   <body>
     <div class="app-wrapper">
@@ -43,12 +50,33 @@ import "../styles/global.css";
 </html>
 
 <style>
+  :root, html[data-theme="light"] {
+    --bg-page: #f9fafb;
+    --bg-surface: #fff;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --brand-color: #4f46e5;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  html[data-theme="dark"] {
+    --bg-page: #121212;
+    --bg-surface: #1e1e1e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #aaaaaa;
+    --border-color: #333333;
+    --brand-color: #7c6ff7;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
   html, body {
     margin: 0;
     width: 100%;
     height: 100%;
     font-family: 'Inter', sans-serif;
-    background-color: #f9fafb;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
   }
 
   .app-wrapper {
@@ -58,8 +86,8 @@ import "../styles/global.css";
   }
 
   .nav-bar {
-    background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow);
   }
 
   .nav-inner {
@@ -81,7 +109,7 @@ import "../styles/global.css";
   .nav-brand {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #4f46e5;
+    color: var(--brand-color);
     text-decoration: none;
   }
 
@@ -103,7 +131,7 @@ import "../styles/global.css";
   }
 
   .footer {
-    background-color: #fff;
+    background-color: var(--bg-surface);
     margin-top: auto;
   }
 
@@ -121,14 +149,14 @@ import "../styles/global.css";
   }
 
   .footer-divider {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border-color);
     padding-top: 16px;
   }
 
   .footer-text {
     text-align: center;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--text-secondary);
     margin: 0;
   }
 </style>
