@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Box from "@mui/material/Box";
@@ -10,17 +10,25 @@ import ConvertView from "./ConvertView";
 
 const THEME_STORAGE_KEY = "theme-mode";
 
-const getInitialMode = (): "light" | "dark" => {
-	if (typeof window === "undefined") return "light";
-	const stored = localStorage.getItem(THEME_STORAGE_KEY);
-	if (stored === "light" || stored === "dark") return stored;
-	return window.matchMedia("(prefers-color-scheme: dark)").matches
-		? "dark"
-		: "light";
-};
-
 const App: React.FC = () => {
-	const [mode, setMode] = useState<"light" | "dark">(getInitialMode);
+	const [mode, setMode] = useState<"light" | "dark">("light");
+
+	// Sync mode with what anti-FOUC script determined — runs before paint
+	useLayoutEffect(() => {
+		const stored = localStorage.getItem(THEME_STORAGE_KEY);
+		if (stored === "light" || stored === "dark") {
+			setMode(stored);
+			return;
+		}
+		const htmlAttr = document.documentElement.getAttribute("data-theme");
+		if (htmlAttr === "dark" || htmlAttr === "light") {
+			setMode(htmlAttr);
+			return;
+		}
+		if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+			setMode("dark");
+		}
+	}, []);
 
 	const theme = useMemo(() => createAppTheme(mode), [mode]);
 
