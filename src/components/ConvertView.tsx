@@ -1,5 +1,5 @@
 import type React from "react";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useState, useEffect } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -9,6 +9,20 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import RunEstimates from "./RunEstimates";
 import type { TimeInput } from "./RunEstimates";
+import { milesToKm } from "../utils/conversion";
+
+const CUSTOM_DISTANCES_KEY = "customDistances";
+
+const HARDCODED_DISTANCES: Record<string, number> = {
+	"100m": 0.1,
+	"400m": 0.4,
+	"1km": 1,
+	"1mile": 1.60934,
+	"5km": 5,
+	"10km": 10,
+	"Half Marathon": 21.0975,
+	Marathon: 42.195,
+};
 
 const ConvertView: React.FC = () => {
 	const [values, setValues] = useState({
@@ -18,15 +32,36 @@ const ConvertView: React.FC = () => {
 		milesPerHour: "",
 	});
 
-	const [times, setTimes] = useState<Record<string, TimeInput>>({
-		"100m": { hours: 0, minutes: 0, seconds: 0 },
-		"400m": { hours: 0, minutes: 0, seconds: 0 },
-		"1km": { hours: 0, minutes: 0, seconds: 0 },
-		"1mile": { hours: 0, minutes: 0, seconds: 0 },
-		"5km": { hours: 0, minutes: 0, seconds: 0 },
-		"10km": { hours: 0, minutes: 0, seconds: 0 },
-		"Half Marathon": { hours: 0, minutes: 0, seconds: 0 },
-		Marathon: { hours: 0, minutes: 0, seconds: 0 },
+	const [customDistances, setCustomDistances] = useState<Record<string, number>>(() => {
+		try {
+			const saved = localStorage.getItem(CUSTOM_DISTANCES_KEY);
+			return saved ? JSON.parse(saved) : {};
+		} catch {
+			return {};
+		}
+	});
+
+	const [times, setTimes] = useState<Record<string, TimeInput>>(() => {
+		const initial: Record<string, TimeInput> = {
+			"100m": { hours: 0, minutes: 0, seconds: 0 },
+			"400m": { hours: 0, minutes: 0, seconds: 0 },
+			"1km": { hours: 0, minutes: 0, seconds: 0 },
+			"1mile": { hours: 0, minutes: 0, seconds: 0 },
+			"5km": { hours: 0, minutes: 0, seconds: 0 },
+			"10km": { hours: 0, minutes: 0, seconds: 0 },
+			"Half Marathon": { hours: 0, minutes: 0, seconds: 0 },
+			Marathon: { hours: 0, minutes: 0, seconds: 0 },
+		};
+		try {
+			const savedCustom = localStorage.getItem(CUSTOM_DISTANCES_KEY);
+			if (savedCustom) {
+				const custom: Record<string, number> = JSON.parse(savedCustom);
+				for (const label of Object.keys(custom)) {
+					initial[label] = { hours: 0, minutes: 0, seconds: 0 };
+				}
+			}
+		} catch { /* ignore */ }
+		return initial;
 	});
 
 	const formatToPaceObj = (totalMinutes: number) => {
@@ -38,26 +73,17 @@ const ConvertView: React.FC = () => {
 		};
 	};
 
-	const calculateEstimates = (paceMinutes?: number, paceSeconds?: number) => {
-		const minutes = paceMinutes ?? Number(values.minPerKm.minutes);
-		const seconds = paceSeconds ?? Number(values.minPerKm.seconds);
+	const calculateEstimates = (paceMinutes?: number, paceSeconds?: number, extraCustomDistances?: Record<string, number>) => {
+		const mins = paceMinutes ?? Number(values.minPerKm.minutes);
+		const secs = paceSeconds ?? Number(values.minPerKm.seconds);
 
-		const paceInSeconds = minutes * 60 + seconds;
+		const paceInSeconds = mins * 60 + secs;
 
 		const newTimes = { ...times };
 
-		const distances = {
-			"100m": 0.1,
-			"400m": 0.4,
-			"1km": 1,
-			"1mile": 1.60934,
-			"5km": 5,
-			"10km": 10,
-			"Half Marathon": 21.0975,
-			Marathon: 42.195,
-		};
+		const allDistances = { ...HARDCODED_DISTANCES, ...(extraCustomDistances ?? customDistances) };
 
-		for (const [distance, km] of Object.entries(distances)) {
+		for (const [distance, km] of Object.entries(allDistances)) {
 			const totalSeconds = paceInSeconds * km;
 			const hours = Math.floor(totalSeconds / 3600);
 			const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -67,6 +93,27 @@ const ConvertView: React.FC = () => {
 		}
 
 		return newTimes;
+	};
+
+	useEffect(() => {
+		localStorage.setItem(CUSTOM_DISTANCES_KEY, JSON.stringify(customDistances));
+	}, [customDistances]);
+
+	const handleAddCustomDistance = (label: string, km: number) => {
+		const newCustomDistances = { ...customDistances, [label]: km };
+		setCustomDistances(newCustomDistances);
+
+		const paceInSeconds =
+			Number(values.minPerKm.minutes) * 60 + Number(values.minPerKm.seconds);
+		const totalSeconds = paceInSeconds * km;
+		const hours = Math.floor(totalSeconds / 3600);
+		const minutes = Math.floor((totalSeconds % 3600) / 60);
+		const seconds = Math.floor(totalSeconds % 60);
+
+		setTimes((prev) => ({
+			...prev,
+			[label]: { hours, minutes, seconds },
+		}));
 	};
 
 	const formatSliderLabel = (value: number) => {
@@ -328,6 +375,8 @@ const ConvertView: React.FC = () => {
 			<RunEstimates
 				times={times}
 				onTimeChange={handleTimeChange}
+				customDistances={customDistances}
+				onAddCustomDistance={handleAddCustomDistance}
 				onPaceChange={(_distance, pacePerKm) => {
 					const paceMinPerKm = pacePerKm / 60;
 					const kmPerHour = 3600 / pacePerKm;
