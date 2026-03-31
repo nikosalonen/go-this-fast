@@ -5,7 +5,18 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import InputLabel from "@mui/material/InputLabel";
+import FormControl from "@mui/material/FormControl";
+import FormHelperText from "@mui/material/FormHelperText";
 import { DistanceTimeBox } from "./DistanceTimeBox";
+import { milesToKm } from "../utils/conversion";
 
 export interface TimeInput {
 	hours: number | "";
@@ -22,6 +33,8 @@ interface RunEstimatesProps {
 	) => void;
 	onPaceChange?: (distance: string, pacePerKm: number) => void;
 	onSpeedChange?: (distance: string, speedKmH: number) => void;
+	customDistances?: Record<string, number>;
+	onAddCustomDistance?: (label: string, km: number) => void;
 }
 
 const VISIBILITY_STORAGE_KEY = "runTimeBoxesVisibility";
@@ -31,6 +44,8 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	onTimeChange,
 	onPaceChange,
 	onSpeedChange,
+	customDistances,
+	onAddCustomDistance,
 }) => {
 	const distances: Record<string, number> = {
 		"100m": 0.1,
@@ -42,6 +57,14 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		"Half Marathon": 21.0975,
 		"Marathon": 42.195,
 	};
+
+	const allDistances = { ...distances, ...(customDistances ?? {}) };
+
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [newLabel, setNewLabel] = useState("");
+	const [newValue, setNewValue] = useState("");
+	const [newUnit, setNewUnit] = useState<"km" | "mi">("km");
+	const [labelError, setLabelError] = useState("");
 
 	const [visibleBoxes, setVisibleBoxes] = useState<Record<string, boolean>>({});
 
@@ -82,7 +105,7 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	};
 
 	const handleResetVisibility = () => {
-		const resetVisibility = Object.keys(distances).reduce(
+		const resetVisibility = Object.keys(allDistances).reduce(
 			(acc, distance) => ({ ...acc, [distance]: true }),
 			{}
 		);
@@ -103,7 +126,7 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 			(updatedTime.minutes === "" ? 0 : Number(updatedTime.minutes)) * 60 +
 			(updatedTime.seconds === "" ? 0 : Number(updatedTime.seconds));
 
-		const distanceKm = distances[distance];
+		const distanceKm = allDistances[distance];
 
 		if (distanceKm && totalSeconds > 0) {
 			const pacePerKm = totalSeconds / distanceKm;
@@ -117,9 +140,9 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	};
 
 	const updateAllDistances = (sourceDistance: string, pacePerKm: number) => {
-		if (!distances[sourceDistance]) return;
+		if (!allDistances[sourceDistance]) return;
 
-		Object.entries(distances).forEach(([distanceLabel, distanceKm]) => {
+		Object.entries(allDistances).forEach(([distanceLabel, distanceKm]) => {
 			if (distanceLabel === sourceDistance) return;
 
 			const totalSeconds = pacePerKm * distanceKm;
@@ -144,6 +167,32 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 		return shortDistances.includes(distance);
 	};
 
+	const handleDialogSubmit = () => {
+		const trimmedLabel = newLabel.trim();
+		const numValue = Number.parseFloat(newValue);
+
+		if (!trimmedLabel) {
+			setLabelError("Label is required");
+			return;
+		}
+		if (trimmedLabel in allDistances) {
+			setLabelError("A distance with this label already exists");
+			return;
+		}
+		if (!newValue || Number.isNaN(numValue) || numValue <= 0) {
+			setLabelError("Enter a valid positive distance");
+			return;
+		}
+
+		const km = newUnit === "mi" ? milesToKm(numValue) : numValue;
+		onAddCustomDistance?.(trimmedLabel, km);
+		setDialogOpen(false);
+		setNewLabel("");
+		setNewValue("");
+		setNewUnit("km");
+		setLabelError("");
+	};
+
 	const hasHiddenBoxes = Object.values(visibleBoxes).some(visible => visible === false);
 
 	return (
@@ -152,16 +201,26 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 				<Typography variant="h5" fontWeight="bold">
 					Running Time Estimates
 				</Typography>
-				{hasHiddenBoxes && (
+				<Stack direction="row" spacing={1}>
+					{hasHiddenBoxes && (
+						<Button
+							variant="contained"
+							size="small"
+							onClick={handleResetVisibility}
+							aria-label="Reset hidden time boxes"
+						>
+							Reset Hidden Boxes
+						</Button>
+					)}
 					<Button
-						variant="contained"
+						variant="outlined"
 						size="small"
-						onClick={handleResetVisibility}
-						aria-label="Reset hidden time boxes"
+						onClick={() => setDialogOpen(true)}
+						aria-label="Add custom distance"
 					>
-						Reset Hidden Boxes
+						Add distance
 					</Button>
-				)}
+				</Stack>
 			</Stack>
 			<Grid container spacing={2}>
 				{times && Object.entries(times).length > 0 ? (
@@ -186,6 +245,48 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 					</Grid>
 				)}
 			</Grid>
+			<Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setLabelError(""); }} maxWidth="xs" fullWidth>
+				<DialogTitle>Add Custom Distance</DialogTitle>
+				<DialogContent>
+					<Stack spacing={2} sx={{ mt: 1 }}>
+						<TextField
+							label="Label"
+							value={newLabel}
+							onChange={(e) => { setNewLabel(e.target.value); setLabelError(""); }}
+							error={!!labelError}
+							helperText={labelError || "e.g. 8km, 50km ultra"}
+							fullWidth
+							autoFocus
+						/>
+						<Stack direction="row" spacing={1}>
+							<TextField
+								label="Distance"
+								type="number"
+								value={newValue}
+								onChange={(e) => setNewValue(e.target.value)}
+								inputProps={{ min: 0, step: "any" }}
+								fullWidth
+							/>
+							<FormControl sx={{ minWidth: 80 }}>
+								<InputLabel>Unit</InputLabel>
+								<Select
+									value={newUnit}
+									label="Unit"
+									onChange={(e) => setNewUnit(e.target.value as "km" | "mi")}
+								>
+									<MenuItem value="km">km</MenuItem>
+									<MenuItem value="mi">mi</MenuItem>
+								</Select>
+								<FormHelperText> </FormHelperText>
+							</FormControl>
+						</Stack>
+					</Stack>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => { setDialogOpen(false); setLabelError(""); }}>Cancel</Button>
+					<Button variant="contained" onClick={handleDialogSubmit}>Add</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 };
