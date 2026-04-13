@@ -10,12 +10,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.2",
+    "@astrojs/react": "^5.0.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
-    "astro": "^6.1.2",
+    "astro": "^6.1.5",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
