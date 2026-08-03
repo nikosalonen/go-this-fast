@@ -9,7 +9,6 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import RunEstimates from "./RunEstimates";
 import type { TimeInput } from "./RunEstimates";
-import { milesToKm } from "../utils/conversion";
 
 const CUSTOM_DISTANCES_KEY = "customDistances";
 
@@ -32,37 +31,37 @@ const ConvertView: React.FC = () => {
 		milesPerHour: "",
 	});
 
-	const [customDistances, setCustomDistances] = useState<Record<string, number>>(() => {
+	const [customDistances, setCustomDistances] = useState<Record<string, number>>({});
+	const [storageLoaded, setStorageLoaded] = useState(false);
+
+	const [times, setTimes] = useState<Record<string, TimeInput>>(() =>
+		Object.fromEntries(
+			Object.keys(HARDCODED_DISTANCES).map((label) => [
+				label,
+				{ hours: 0, minutes: 0, seconds: 0 },
+			]),
+		),
+	);
+
+	// localStorage is unavailable while server-rendering, so saved distances have to be
+	// applied after mount — reading them during the first render breaks hydration
+	useEffect(() => {
 		try {
 			const saved = localStorage.getItem(CUSTOM_DISTANCES_KEY);
-			return saved ? JSON.parse(saved) : {};
-		} catch {
-			return {};
-		}
-	});
-
-	const [times, setTimes] = useState<Record<string, TimeInput>>(() => {
-		const initial: Record<string, TimeInput> = {
-			"100m": { hours: 0, minutes: 0, seconds: 0 },
-			"400m": { hours: 0, minutes: 0, seconds: 0 },
-			"1km": { hours: 0, minutes: 0, seconds: 0 },
-			"1mile": { hours: 0, minutes: 0, seconds: 0 },
-			"5km": { hours: 0, minutes: 0, seconds: 0 },
-			"10km": { hours: 0, minutes: 0, seconds: 0 },
-			"Half Marathon": { hours: 0, minutes: 0, seconds: 0 },
-			Marathon: { hours: 0, minutes: 0, seconds: 0 },
-		};
-		try {
-			const savedCustom = localStorage.getItem(CUSTOM_DISTANCES_KEY);
-			if (savedCustom) {
-				const custom: Record<string, number> = JSON.parse(savedCustom);
-				for (const label of Object.keys(custom)) {
-					initial[label] = { hours: 0, minutes: 0, seconds: 0 };
-				}
+			if (saved) {
+				const custom: Record<string, number> = JSON.parse(saved);
+				setCustomDistances(custom);
+				setTimes((prev) => {
+					const next = { ...prev };
+					for (const label of Object.keys(custom)) {
+						next[label] ??= { hours: 0, minutes: 0, seconds: 0 };
+					}
+					return next;
+				});
 			}
-		} catch { /* ignore */ }
-		return initial;
-	});
+		} catch { /* ignore malformed storage */ }
+		setStorageLoaded(true);
+	}, []);
 
 	const formatToPaceObj = (totalMinutes: number) => {
 		const minutes = Math.floor(totalMinutes);
@@ -95,9 +94,11 @@ const ConvertView: React.FC = () => {
 		return newTimes;
 	};
 
+	// Guarded so the empty initial state can't overwrite saved distances before they load
 	useEffect(() => {
+		if (!storageLoaded) return;
 		localStorage.setItem(CUSTOM_DISTANCES_KEY, JSON.stringify(customDistances));
-	}, [customDistances]);
+	}, [customDistances, storageLoaded]);
 
 	const handleAddCustomDistance = (label: string, km: number) => {
 		const newCustomDistances = { ...customDistances, [label]: km };
@@ -253,45 +254,67 @@ const ConvertView: React.FC = () => {
 	};
 
 	return (
-		<>
-			<Card sx={{ maxWidth: 448, mx: "auto" }}>
+		<Box
+			sx={{
+				display: "grid",
+				gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 420px) minmax(0, 1fr)" },
+				alignItems: "start",
+				gap: 3,
+				px: { xs: 2, sm: 0 },
+			}}
+		>
+			<Card sx={{ position: { lg: "sticky" }, top: { lg: 24 } }}>
 				<CardContent sx={{ p: 3 }}>
-					<Typography variant="h5" fontWeight="bold" mb={3} color="text.primary">
+					<Typography
+						component="h1"
+						variant="h5"
+						sx={{ fontWeight: "bold", mb: 3, color: "text.primary" }}
+					>
 						Pace/Speed Converter
 					</Typography>
 
 					<Stack spacing={3}>
+						{/* One shared pace control; both unit sections below read from it */}
+						<Box>
+							<Typography
+								component="h2"
+								variant="subtitle1"
+								sx={{ fontWeight: 600, color: "text.secondary" }}
+							>
+								Pace
+							</Typography>
+							<Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+								Drag to set (min/km)
+							</Typography>
+							<Box sx={{ px: 1 }}>
+								<Slider
+									value={paceSliderValue}
+									onChange={handleSliderChange}
+									min={60}
+									max={900}
+									step={1}
+									marks={sliderMarks}
+									valueLabelDisplay="auto"
+									valueLabelFormat={formatSliderLabel}
+									aria-label="Pace in minutes per kilometer"
+								/>
+							</Box>
+						</Box>
+
 						{/* Kilometer metrics */}
 						<Stack spacing={2}>
-							<Typography variant="subtitle1" fontWeight={600} color="text.secondary">
+							<Typography
+								component="h2"
+								variant="subtitle1"
+								sx={{ fontWeight: 600, color: "text.secondary" }}
+							>
 								Kilometers
 							</Typography>
 							<Box>
-								<Typography variant="body2" color="text.secondary" mb={0.5}>
+								<Typography variant="body2" sx={{ color: "text.secondary", mb: 0.5 }}>
 									Pace (min/km)
 								</Typography>
-								<Box sx={{ px: 1, mb: 1 }}>
-									<Typography
-										variant="h6"
-										fontWeight="bold"
-										textAlign="center"
-										color="text.primary"
-										mb={1}
-									>
-										{formatSliderLabel(paceSliderValue)}
-									</Typography>
-									<Slider
-										value={paceSliderValue}
-										onChange={handleSliderChange}
-										min={60}
-										max={900}
-										step={1}
-										marks={sliderMarks}
-										valueLabelDisplay="auto"
-										valueLabelFormat={formatSliderLabel}
-									/>
-								</Box>
-								<Stack direction="row" spacing={1} alignItems="center">
+								<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 									<TextField
 										label="Min"
 										type="number"
@@ -300,7 +323,9 @@ const ConvertView: React.FC = () => {
 										onChange={(e) =>
 											handlePaceChange("minPerKm", "minutes", e.target.value)
 										}
-										inputProps={{ min: 0, max: 20, style: { textAlign: "center" } }}
+										slotProps={{
+											htmlInput: { min: 0, max: 20, style: { textAlign: "center" } }
+										}}
 									/>
 									<Typography variant="h6">:</Typography>
 									<TextField
@@ -311,31 +336,37 @@ const ConvertView: React.FC = () => {
 										onChange={(e) =>
 											handlePaceChange("minPerKm", "seconds", e.target.value)
 										}
-										inputProps={{ min: 0, max: 59, style: { textAlign: "center" } }}
+										slotProps={{
+											htmlInput: { min: 0, max: 59, style: { textAlign: "center" } }
+										}}
 									/>
 								</Stack>
 							</Box>
 
 							<TextField
 								label="Kilometers per Hour"
-								type="number"
 								value={values.kmPerHour}
 								onChange={handleChange("kmPerHour")}
 								placeholder="0.0"
 								fullWidth
+								slotProps={{ htmlInput: { inputMode: "decimal" } }}
 							/>
 						</Stack>
 
 						{/* Mile metrics */}
 						<Stack spacing={2}>
-							<Typography variant="subtitle1" fontWeight={600} color="text.secondary">
+							<Typography
+								component="h2"
+								variant="subtitle1"
+								sx={{ fontWeight: 600, color: "text.secondary" }}
+							>
 								Miles
 							</Typography>
 							<Box>
-								<Typography variant="body2" color="text.secondary" mb={0.5}>
+								<Typography variant="body2" sx={{ color: "text.secondary", mb: 0.5 }}>
 									Pace (min/mile)
 								</Typography>
-								<Stack direction="row" spacing={1} alignItems="center">
+								<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
 									<TextField
 										label="Min"
 										type="number"
@@ -344,7 +375,9 @@ const ConvertView: React.FC = () => {
 										onChange={(e) =>
 											handlePaceChange("minPerMile", "minutes", e.target.value)
 										}
-										inputProps={{ min: 0, max: 30, style: { textAlign: "center" } }}
+										slotProps={{
+											htmlInput: { min: 0, max: 30, style: { textAlign: "center" } }
+										}}
 									/>
 									<Typography variant="h6">:</Typography>
 									<TextField
@@ -355,18 +388,20 @@ const ConvertView: React.FC = () => {
 										onChange={(e) =>
 											handlePaceChange("minPerMile", "seconds", e.target.value)
 										}
-										inputProps={{ min: 0, max: 59, style: { textAlign: "center" } }}
+										slotProps={{
+											htmlInput: { min: 0, max: 59, style: { textAlign: "center" } }
+										}}
 									/>
 								</Stack>
 							</Box>
 
 							<TextField
 								label="Miles per Hour"
-								type="number"
 								value={values.milesPerHour}
 								onChange={handleChange("milesPerHour")}
 								placeholder="0.0"
 								fullWidth
+								slotProps={{ htmlInput: { inputMode: "decimal" } }}
 							/>
 						</Stack>
 					</Stack>
@@ -388,7 +423,7 @@ const ConvertView: React.FC = () => {
 					});
 				}}
 			/>
-		</>
+		</Box>
 	);
 };
 

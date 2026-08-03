@@ -14,7 +14,6 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import InputLabel from "@mui/material/InputLabel";
 import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
 import { DistanceTimeBox } from "./DistanceTimeBox";
 import { milesToKm } from "../utils/conversion";
 
@@ -196,9 +195,19 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 	const hasHiddenBoxes = Object.values(visibleBoxes).some(visible => visible === false);
 
 	return (
-		<Box sx={{ p: 2 }}>
-			<Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-				<Typography variant="h5" fontWeight="bold">
+		<Box sx={{ minWidth: 0 }}>
+			<Stack
+				direction="row"
+				spacing={1}
+				sx={{
+					justifyContent: "space-between",
+					alignItems: "center",
+					flexWrap: "wrap",
+					rowGap: 1,
+					mb: 2,
+				}}
+			>
+				<Typography component="h2" variant="h5" sx={{ fontWeight: "bold" }}>
 					Running Time Estimates
 				</Typography>
 				<Stack direction="row" spacing={1}>
@@ -227,7 +236,7 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 					Object.entries(times)
 						.filter(([distance]) => visibleBoxes[distance] !== false)
 						.map(([distance, time]) => (
-							<Grid key={distance} size={{ xs: 12, md: 6, lg: 4 }}>
+							<Grid key={distance} size={{ xs: 12, sm: 6, xl: 4 }}>
 								<DistanceTimeBox
 									distance={distance}
 									time={time}
@@ -264,8 +273,10 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 								type="number"
 								value={newValue}
 								onChange={(e) => setNewValue(e.target.value)}
-								inputProps={{ min: 0, step: "any" }}
 								fullWidth
+								slotProps={{
+									htmlInput: { min: 0, step: "any" }
+								}}
 							/>
 							<FormControl sx={{ minWidth: 80 }}>
 								<InputLabel>Unit</InputLabel>
@@ -277,7 +288,6 @@ const RunEstimates: React.FC<RunEstimatesProps> = ({
 									<MenuItem value="km">km</MenuItem>
 									<MenuItem value="mi">mi</MenuItem>
 								</Select>
-								<FormHelperText> </FormHelperText>
 							</FormControl>
 						</Stack>
 					</Stack>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
@@ -12,6 +12,12 @@ const THEME_STORAGE_KEY = "theme-mode";
 
 const App: React.FC = () => {
 	const [mode, setMode] = useState<"light" | "dark">("light");
+	const [toggleSlot, setToggleSlot] = useState<HTMLElement | null>(null);
+
+	// The toggle lives in the Astro-rendered nav, so it can only be attached after mount
+	useEffect(() => {
+		setToggleSlot(document.getElementById("theme-toggle-slot"));
+	}, []);
 
 	// Sync mode with what anti-FOUC script determined — runs before paint
 	useLayoutEffect(() => {
@@ -58,26 +64,21 @@ const App: React.FC = () => {
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
-			<Box
-				sx={{
-					display: "flex",
-					justifyContent: "flex-end",
-					px: 2,
-					pt: 1,
-				}}
-			>
-				<IconButton
-					onClick={toggleMode}
-					color="inherit"
-					aria-label={
-						mode === "dark"
-							? "Switch to light mode"
-							: "Switch to dark mode"
-					}
-				>
-					{mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-				</IconButton>
-			</Box>
+			{toggleSlot &&
+				createPortal(
+					<IconButton
+						onClick={toggleMode}
+						color="inherit"
+						aria-label={
+							mode === "dark"
+								? "Switch to light mode"
+								: "Switch to dark mode"
+						}
+					>
+						{mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+					</IconButton>,
+					toggleSlot,
+				)}
 			<ConvertView />
 		</ThemeProvider>
 	);
