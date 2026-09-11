@@ -33,4 +33,4 @@ State is managed via React hooks. localStorage persists custom distances and the
 - Material UI components styled via the `sx` prop; plain scoped CSS in `Layout.astro` for the page shell. MUI v9 removed system props, so spacing/colour go inside `sx`, not on the component
 - Tab indentation in `src/`
 - Conventional commits (feat:, docs:, fix:)
-- Node v20 (see .nvmrc)
+- Node v24 (see .nvmrc)
